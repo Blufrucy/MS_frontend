@@ -1,62 +1,134 @@
 <template>
   <div class="home">
-    <!-- 轮播图 -->
-    <el-carousel height="400px" class="banner">
-      <el-carousel-item v-for="item in banners" :key="item">
-        <div class="banner-item" :style="{ background: item.color }">
-          <h1>{{ item.title }}</h1>
-          <p>{{ item.subtitle }}</p>
-        </div>
-      </el-carousel-item>
-    </el-carousel>
-
-    <!-- 秒杀专区 -->
-    <div class="section">
-      <div class="section-header">
-        <div class="title-wrapper">
-          <el-icon class="title-icon" :size="32" color="#ff4d4f"><Timer /></el-icon>
-          <div>
-            <h2>限时秒杀</h2>
-            <p class="subtitle">超值优惠 限时抢购</p>
+    <!-- 主视觉区域 -->
+    <div class="hero-section">
+      <div class="hero-container">
+        <!-- 左侧分类导航 -->
+        <div class="category-nav">
+          <div class="category-item" v-for="category in categories" :key="category.id">
+            <el-icon><component :is="category.icon" /></el-icon>
+            <span>{{ category.name }}</span>
+            <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
         </div>
-        <el-button type="danger" size="large" @click="$router.push('/seckill')">
-          查看更多 <el-icon><ArrowRight /></el-icon>
-        </el-button>
-      </div>
 
-      <div class="products-grid" v-loading="loading">
-        <div class="product-card" v-for="product in seckillProducts" :key="product.id" @click="goToDetail(product.id)">
-          <div class="product-image-wrapper">
-            <img :src="product.productImageUrl || product.imageUrl || getPlaceholder()" class="product-image" @error="handleImageError" />
-            <div class="product-badge" v-if="product.status === 1">
-              <span>抢购中</span>
-            </div>
-          </div>
-          <div class="product-info">
-            <h3 class="product-name">{{ product.productName || '商品名称' }}</h3>
-            <div class="price-section">
-              <div class="price-box">
-                <span class="price-label">秒杀价</span>
-                <span class="seckill-price">¥{{ product.seckillPrice }}</span>
+        <!-- 中间轮播图 -->
+        <div class="main-carousel">
+          <el-carousel height="480px" indicator-position="outside">
+            <el-carousel-item v-for="(item, index) in banners" :key="index">
+              <div class="banner-item" :style="{ background: item.color }">
+                <div class="banner-content">
+                  <h1 class="banner-title">{{ item.title }}</h1>
+                  <p class="banner-subtitle">{{ item.subtitle }}</p>
+                  <el-button type="danger" size="large" round class="banner-btn">
+                    立即抢购
+                  </el-button>
+                </div>
               </div>
-              <span class="original-price" v-if="product.originalPrice">¥{{ product.originalPrice }}</span>
-            </div>
-            <div class="stock-section">
-              <div class="stock-bar">
-                <div class="stock-progress" :style="{ width: getStockPercentage(product) + '%' }"></div>
+            </el-carousel-item>
+          </el-carousel>
+        </div>
+
+        <!-- 右侧快捷入口 -->
+        <div class="quick-links">
+          <div class="user-card" v-if="userStore.isLoggedIn">
+            <div class="user-info">
+              <el-avatar :size="50">{{ userStore.userInfo?.username?.charAt(0) }}</el-avatar>
+              <div class="user-text">
+                <p class="username">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</p>
+                <p class="user-level">普通会员</p>
               </div>
-              <p class="stock-text">已抢 {{ getStockPercentage(product) }}%</p>
             </div>
-            <el-button type="danger" size="large" class="buy-btn" :disabled="product.status !== 1">
-              <el-icon><ShoppingCart /></el-icon>
-              立即抢购
-            </el-button>
+          </div>
+          <div class="user-card login-card" v-else @click="$router.push('/login')">
+            <p class="login-text">Hi，欢迎来到商城</p>
+            <el-button type="primary" size="small" round>立即登录</el-button>
+          </div>
+
+          <div class="quick-menu">
+            <div class="menu-item" @click="$router.push('/orders')">
+              <el-icon :size="20" color="#ff6b35"><ShoppingBag /></el-icon>
+              <span>我的订单</span>
+            </div>
+            <div class="menu-item" @click="$router.push('/address')">
+              <el-icon :size="20" color="#409eff"><Location /></el-icon>
+              <span>收货地址</span>
+            </div>
+            <div class="menu-item" @click="$router.push('/seckill')">
+              <el-icon :size="20" color="#f56c6c"><Timer /></el-icon>
+              <span>限时秒杀</span>
+            </div>
+            <div class="menu-item" @click="$router.push('/profile')">
+              <el-icon :size="20" color="#67c23a"><User /></el-icon>
+              <span>个人中心</span>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <el-empty v-if="!loading && seckillProducts.length === 0" description="暂无秒杀商品" />
+    <!-- 特色服务 -->
+    <div class="features-section">
+      <div class="container">
+        <div class="feature-item" v-for="feature in features" :key="feature.id">
+          <el-icon :size="32" :color="feature.color"><component :is="feature.icon" /></el-icon>
+          <div class="feature-text">
+            <h4>{{ feature.title }}</h4>
+            <p>{{ feature.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 热卖商品 -->
+    <div class="products-section">
+      <div class="container">
+        <div class="section-header">
+          <div class="title-wrapper">
+            <div class="title-line"></div>
+            <h2 class="section-title">热卖商品</h2>
+            <div class="title-line"></div>
+          </div>
+          <p class="section-subtitle">精选好物 · 品质保证 · 限时优惠</p>
+        </div>
+
+        <div class="products-grid" v-loading="loading">
+          <div class="product-card" v-for="product in hotProducts" :key="product.id" @click="goToProducts">
+            <div class="product-image-wrapper">
+              <img :src="product.imageUrl || getPlaceholder()" class="product-image" @error="handleImageError" />
+              <div class="product-overlay">
+                <el-button type="primary" circle size="large">
+                  <el-icon :size="20"><View /></el-icon>
+                </el-button>
+              </div>
+              <div class="product-badge" v-if="product.status === 1">
+                <span>HOT</span>
+              </div>
+            </div>
+            <div class="product-info">
+              <h3 class="product-name" :title="product.name">{{ product.name || '商品名称' }}</h3>
+              <p class="product-desc">{{ product.description || '优质商品，值得拥有' }}</p>
+              <div class="product-footer">
+                <div class="price-box">
+                  <span class="price-symbol">¥</span>
+                  <span class="price-value">{{ product.originalPrice || '0.00' }}</span>
+                </div>
+                <el-button type="danger" size="small" round :disabled="product.status !== 1">
+                  立即购买
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="load-more" v-if="!loading && hotProducts.length > 0">
+          <el-button type="primary" size="large" round @click="$router.push('/products')">
+            查看更多商品
+          </el-button>
+        </div>
+
+        <el-empty v-if="!loading && hotProducts.length === 0" description="暂无热卖商品" />
+      </div>
     </div>
   </div>
 </template>
@@ -64,63 +136,71 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getSeckillProductList } from '@/api/product'
+import { useUserStore } from '@/stores/user'
+import { getProductList } from '@/api/product'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
-const seckillProducts = ref([])
+const hotProducts = ref([])
 
-const banners = [
-  { title: '限时秒杀', subtitle: '超值优惠，抢到就是赚到', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
-  { title: '新品上市', subtitle: '最新款式，等你来抢', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
-  { title: '品质保证', subtitle: '正品保障，售后无忧', color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }
+const categories = [
+  { id: 1, name: '数码电器', icon: 'Monitor' },
+  { id: 2, name: '服装鞋包', icon: 'Shirt' },
+  { id: 3, name: '食品生鲜', icon: 'Food' },
+  { id: 4, name: '家居家装', icon: 'House' },
+  { id: 5, name: '美妆个护', icon: 'Brush' },
+  { id: 6, name: '运动户外', icon: 'Basketball' },
+  { id: 7, name: '图书文娱', icon: 'Reading' },
+  { id: 8, name: '母婴玩具', icon: 'Present' }
 ]
 
-const fetchSeckillProducts = async () => {
+const banners = [
+  { 
+    title: '年终大促', 
+    subtitle: '全场5折起 · 满299减50', 
+    color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+  },
+  { 
+    title: '新品首发', 
+    subtitle: '最新款式 · 限时特惠', 
+    color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' 
+  },
+  { 
+    title: '品质保证', 
+    subtitle: '正品保障 · 售后无忧', 
+    color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' 
+  }
+]
+
+const features = [
+  { id: 1, icon: 'Van', title: '极速配送', desc: '闪电发货 次日达', color: '#409eff' },
+  { id: 2, icon: 'CircleCheck', title: '品质保证', desc: '正品保障 假一赔十', color: '#67c23a' },
+  { id: 3, icon: 'Headset', title: '贴心服务', desc: '7x24小时客服', color: '#e6a23c' },
+  { id: 4, icon: 'RefreshRight', title: '无忧退换', desc: '7天无理由退换', color: '#f56c6c' }
+]
+
+const fetchHotProducts = async () => {
   loading.value = true
   try {
-    const res = await getSeckillProductList({
+    const res = await getProductList({
       page: 1,
-      size: 20
+      size: 8
     })
-    // 过滤出进行中的商品，取前4个
-    const allProducts = res.data.list || []
-    seckillProducts.value = allProducts.filter(p => p.status === 1).slice(0, 4)
+    hotProducts.value = res.data?.list || []
   } catch (error) {
-    ElMessage.error('获取秒杀商品失败')
+    ElMessage.error('获取热卖商品失败')
   } finally {
     loading.value = false
   }
 }
 
-const getStockPercentage = (product) => {
-  return ((product.stock - product.availableStock) / product.stock * 100).toFixed(0)
-}
-
-const getProgressColor = (product) => {
-  const percentage = getStockPercentage(product)
-  if (percentage < 30) return '#67c23a'
-  if (percentage < 70) return '#e6a23c'
-  return '#f56c6c'
-}
-
-const getStatusType = (status) => {
-  const types = { 0: 'info', 1: 'success', 2: 'danger' }
-  return types[status] || 'info'
-}
-
-const getStatusText = (status) => {
-  const texts = { 0: '未开始', 1: '进行中', 2: '已结束' }
-  return texts[status] || '未知'
-}
-
-const goToDetail = (id) => {
-  router.push(`/seckill/${id}`)
+const goToProducts = () => {
+  router.push('/products')
 }
 
 const getPlaceholder = () => {
-  // 使用 data URL 创建占位图
   return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjIwIiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+5ZWG5ZOB5Zu+54mHPC90ZXh0Pjwvc3ZnPg=='
 }
 
@@ -129,95 +209,332 @@ const handleImageError = (e) => {
 }
 
 onMounted(() => {
-  fetchSeckillProducts()
+  fetchHotProducts()
 })
 </script>
 
 <style scoped>
 .home {
   margin: -24px -20px;
+  background: #f5f5f5;
 }
 
-.banner {
-  margin-bottom: 40px;
+/* 主视觉区域 */
+.hero-section {
+  background: #fff;
+  padding: 20px 0;
+}
+
+.hero-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  gap: 20px;
+  padding: 0 40px;
+}
+
+/* 左侧分类导航 */
+.category-nav {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  padding: 10px 0;
+  height: 480px;
+  overflow-y: auto;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 24px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 15px;
+}
+
+.category-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  padding-left: 28px;
+}
+
+.category-item .arrow {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+/* 中间轮播图 */
+.main-carousel {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.main-carousel :deep(.el-carousel) {
+  height: 480px;
 }
 
 .banner-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
+  padding: 100px;
+}
+
+.banner-content {
+  text-align: center;
   color: #fff;
 }
 
-.banner-item h1 {
-  font-size: 48px;
-  margin: 0 0 16px 0;
+.banner-title {
+  font-size: 56px;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.banner-item p {
-  font-size: 20px;
-  margin: 0;
+.banner-subtitle {
+  font-size: 24px;
+  margin: 0 0 40px 0;
+  opacity: 0.95;
 }
 
-.section {
-  padding: 40px 20px;
-  max-width: 1400px;
-  margin: 0 auto;
+.banner-btn {
+  padding: 16px 48px;
+  font-size: 18px;
+  font-weight: bold;
 }
 
-.section-header {
+/* 右侧快捷入口 */
+.quick-links {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #ff4d4f;
-}
-
-.title-wrapper {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 16px;
 }
 
-.title-icon {
-  animation: pulse 2s infinite;
+.user-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 20px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.3s;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+.user-card:hover {
+  transform: translateY(-2px);
 }
 
-.section-header h2 {
-  font-size: 28px;
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 30px 20px;
+}
+
+.login-text {
   margin: 0;
-  color: #303133;
-  font-weight: 600;
+  font-size: 16px;
 }
 
-.subtitle {
-  font-size: 14px;
-  color: #909399;
-  margin: 4px 0 0 0;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.products-grid {
+.user-text {
+  flex: 1;
+}
+
+.username {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.user-level {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.quick-menu {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #f5f7fa;
+}
+
+.menu-item:hover {
+  background: #ecf5ff;
+  transform: translateY(-2px);
+}
+
+.menu-item span {
+  font-size: 13px;
+  color: #606266;
+}
+
+/* 特色服务 */
+.features-section {
+  background: #fff;
+  padding: 40px 0;
+  margin-top: 20px;
+}
+
+.container {
+  max-width: 90%;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.features-section .container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
 }
 
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: #fafafa;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.feature-item:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+}
+
+.feature-text h4 {
+  margin: 0 0 6px 0;
+  font-size: 17px;
+  color: #303133;
+  font-weight: 600;
+}
+
+.feature-text p {
+  margin: 0;
+  font-size: 13px;
+  color: #909399;
+}
+
+/* 商品区域 */
+.products-section {
+  padding: 50px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.title-line {
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #409eff);
+}
+
+.title-line:last-child {
+  background: linear-gradient(90deg, #409eff, transparent);
+}
+
+.section-title {
+  font-size: 36px;
+  font-weight: bold;
+  color: #303133;
+  margin: 0;
+}
+
+.section-subtitle {
+  font-size: 15px;
+  color: #909399;
+  margin: 0;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 1600px) {
+  .products-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (max-width: 1400px) {
+  .container {
+    max-width: 1400px;
+    padding: 0 20px;
+  }
+  
+  .hero-container {
+    max-width: 1400px;
+    padding: 0 20px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 1200px) {
+  .hero-container {
+    grid-template-columns: 200px 1fr 260px;
+  }
+  
   .products-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 @media (max-width: 768px) {
+  .hero-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-nav {
+    display: none;
+  }
+  
   .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .features-section .container {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -228,12 +545,14 @@ onMounted(() => {
   overflow: hidden;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
 }
 
 .product-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: #409eff;
 }
 
 .product-image-wrapper {
@@ -241,7 +560,7 @@ onMounted(() => {
   width: 100%;
   padding-top: 100%;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #fafafa;
 }
 
 .product-image {
@@ -251,35 +570,54 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.5s ease;
 }
 
 .product-card:hover .product-image {
-  transform: scale(1.05);
+  transform: scale(1.1);
+}
+
+.product-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.product-card:hover .product-overlay {
+  opacity: 1;
 }
 
 .product-badge {
   position: absolute;
   top: 12px;
-  left: 12px;
-  background: linear-gradient(135deg, #ff6b6b, #ff4d4f);
+  right: 12px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
   color: #fff;
-  padding: 6px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.4);
+  box-shadow: 0 2px 8px rgba(238, 90, 82, 0.4);
+  letter-spacing: 1px;
 }
 
 .product-info {
-  padding: 20px;
+  padding: 16px;
 }
 
 .product-name {
-  font-size: 16px;
-  margin: 0 0 16px 0;
-  height: 44px;
-  line-height: 22px;
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  height: 40px;
+  line-height: 20px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -289,75 +627,47 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.price-section {
+.product-desc {
+  font-size: 12px;
+  color: #909399;
+  margin: 0 0 12px 0;
+  height: 32px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.product-footer {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
 }
 
 .price-box {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: baseline;
 }
 
-.price-label {
-  font-size: 12px;
-  color: #909399;
+.price-symbol {
+  font-size: 14px;
+  color: #ff4d4f;
+  font-weight: bold;
 }
 
-.seckill-price {
-  font-size: 28px;
+.price-value {
+  font-size: 22px;
   color: #ff4d4f;
   font-weight: bold;
   line-height: 1;
 }
 
-.seckill-price::before {
-  content: '¥';
-  font-size: 18px;
-}
-
-.original-price {
-  font-size: 14px;
-  color: #909399;
-  text-decoration: line-through;
-  align-self: flex-end;
-  margin-bottom: 4px;
-}
-
-.stock-section {
-  margin-bottom: 16px;
-}
-
-.stock-bar {
-  height: 8px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.stock-progress {
-  height: 100%;
-  background: linear-gradient(90deg, #ff6b6b, #ff4d4f);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.stock-text {
-  font-size: 12px;
-  color: #ff4d4f;
-  margin: 0;
-  font-weight: 500;
-}
-
-.buy-btn {
-  width: 100%;
-  height: 44px;
-  font-size: 16px;
-  font-weight: 500;
-  border-radius: 8px;
+.load-more {
+  text-align: center;
+  padding: 20px 0;
 }
 </style>

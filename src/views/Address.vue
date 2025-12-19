@@ -1,5 +1,5 @@
 <template>
-  <div class="address-page">
+  <div class="address-page page-container">
     <div class="page-header">
       <h1>收货地址</h1>
       <el-button type="primary" @click="showDialog = true">
@@ -221,8 +221,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
 .address-page {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 

@@ -40,6 +40,9 @@ export function updateUser(data) {
   return request({
     url: '/api/auth/update',
     method: 'post',
-    data
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   })
 }

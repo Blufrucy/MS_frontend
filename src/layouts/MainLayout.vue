@@ -120,13 +120,13 @@ const handleCommand = (command) => {
 }
 
 .header-content {
-  max-width: 1400px;
+  max-width: 95%;
   margin: 0 auto;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 40px;
 }
 
 .logo {
@@ -207,9 +207,9 @@ const handleCommand = (command) => {
 }
 
 .main-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 32px 24px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   min-height: calc(100vh - 130px);
 }
 

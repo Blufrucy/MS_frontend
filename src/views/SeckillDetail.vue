@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-page" v-loading="loading">
+  <div class="detail-page page-container" v-loading="loading">
     <el-card v-if="product">
       <el-row :gutter="40">
         <el-col :span="10">
@@ -290,6 +290,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
 .detail-page {
   max-width: 1400px;
   margin: 0 auto;

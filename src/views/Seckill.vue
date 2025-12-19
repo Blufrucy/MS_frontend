@@ -1,5 +1,5 @@
 <template>
-  <div class="seckill-page">
+  <div class="seckill-page page-container">
     <div class="page-header">
       <h1>
         <el-icon><Timer /></el-icon>
@@ -152,6 +152,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
 .page-header {
   text-align: center;
   margin-bottom: 32px;

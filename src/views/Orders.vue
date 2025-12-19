@@ -1,5 +1,5 @@
 <template>
-  <div class="orders-page">
+  <div class="orders-page page-container">
     <div class="page-header">
       <h1>我的订单</h1>
     </div>
@@ -330,8 +330,14 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
 .orders-page {
-  padding: 20px;
+  padding: 0;
   max-width: 1200px;
   margin: 0 auto;
 }
