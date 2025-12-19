@@ -81,6 +81,11 @@ const routes = [
         path: 'seckill',
         name: 'AdminSeckill',
         component: () => import('@/views/admin/Seckill.vue')
+      },
+      {
+        path: 'orders',
+        name: 'AdminOrders',
+        component: () => import('@/views/admin/Orders.vue')
       }
     ]
   }

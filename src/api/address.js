@@ -41,3 +41,11 @@ export function setDefaultAddress(addressId) {
     method: 'post'
   })
 }
+
+// 根据ID获取地址详情
+export function getAddressById(addressId) {
+  return request({
+    url: `/api/auth/address/${addressId}`,
+    method: 'get'
+  })
+}

@@ -5,7 +5,7 @@
         <h2>欢迎登录</h2>
         <p class="subtitle">秒杀商城 - 限时抢购</p>
         <el-alert
-          title="提示：支持使用邮箱或手机号登录"
+          title=""
           type="info"
           :closable="false"
           style="margin-bottom: 20px;"
@@ -15,7 +15,7 @@
           <el-form-item prop="username">
             <el-input
               v-model="form.username"
-              placeholder="用户名 / 邮箱 / 手机号"
+              placeholder="用户名"
               size="large"
               prefix-icon="User"
             />

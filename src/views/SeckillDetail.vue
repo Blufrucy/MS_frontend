@@ -50,6 +50,46 @@
               </el-descriptions>
             </div>
 
+            <div class="address-section" v-if="product.status === 1">
+              <div class="section-title">
+                <el-icon><Location /></el-icon>
+                <span>收货地址</span>
+              </div>
+              <el-select
+                v-model="selectedAddressId"
+                placeholder="请选择收货地址"
+                style="width: 100%"
+                size="large"
+              >
+                <el-option
+                  v-for="addr in addressList"
+                  :key="addr.id"
+                  :label="`${addr.receiverName} ${addr.phone} ${addr.province}${addr.city}${addr.district}${addr.detailAddress}`"
+                  :value="addr.id"
+                >
+                  <div class="address-option">
+                    <div class="address-main">
+                      <span class="receiver">{{ addr.receiverName }}</span>
+                      <span class="phone">{{ addr.phone }}</span>
+                      <el-tag v-if="addr.isDefault" type="success" size="small">默认</el-tag>
+                    </div>
+                    <div class="address-detail">
+                      {{ addr.province }}{{ addr.city }}{{ addr.district }}{{ addr.detailAddress }}
+                    </div>
+                  </div>
+                </el-option>
+              </el-select>
+              <el-button 
+                text 
+                type="primary" 
+                @click="goToAddressManage"
+                style="margin-top: 8px"
+              >
+                <el-icon><Plus /></el-icon>
+                管理收货地址
+              </el-button>
+            </div>
+
             <div class="action-section">
               <el-input-number
                 v-model="quantity"
@@ -82,7 +122,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { doSeckill, warmUpStock } from '@/api/seckill'
 import { getSeckillProductList } from '@/api/product'
+import { getAddressList } from '@/api/address'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Location, Plus } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,6 +134,8 @@ const loading = ref(false)
 const buying = ref(false)
 const product = ref(null)
 const quantity = ref(1)
+const addressList = ref([])
+const selectedAddressId = ref(null)
 
 // 获取商品详情
 const fetchProductDetail = async () => {
@@ -165,6 +209,32 @@ const getBuyButtonText = () => {
   return '立即抢购'
 }
 
+// 获取收货地址列表
+const fetchAddressList = async () => {
+  try {
+    const res = await getAddressList()
+    console.log('地址列表响应:', res) // 调试日志
+    if (res.code === 200 && res.data) {
+      // 后端直接返回数组，不是 { list: [] } 格式
+      addressList.value = Array.isArray(res.data) ? res.data : []
+      console.log('地址列表:', addressList.value) // 调试日志
+      // 自动选择默认地址
+      const defaultAddr = addressList.value.find(addr => addr.isDefault)
+      if (defaultAddr) {
+        selectedAddressId.value = defaultAddr.id
+      } else if (addressList.value.length > 0) {
+        selectedAddressId.value = addressList.value[0].id
+      }
+    }
+  } catch (error) {
+    console.error('获取地址列表失败:', error)
+  }
+}
+
+const goToAddressManage = () => {
+  router.push('/address')
+}
+
 const handleBuy = async () => {
   if (!userStore.isLoggedIn) {
     ElMessageBox.confirm('请先登录', '提示', {
@@ -176,15 +246,25 @@ const handleBuy = async () => {
     return
   }
 
+  if (!selectedAddressId.value) {
+    ElMessage.warning('请选择收货地址')
+    return
+  }
+
   buying.value = true
   try {
     await doSeckill({
       seckillProductId: product.value.id,
-      quantity: quantity.value
+      quantity: quantity.value,
+      addressId: selectedAddressId.value
     })
-    ElMessage.success('抢购成功！')
+    ElMessage.success('抢购成功！请前往订单页面查看')
     // 刷新商品信息
     await fetchProductDetail()
+    // 3秒后跳转到订单页面
+    setTimeout(() => {
+      router.push('/orders')
+    }, 2000)
   } catch (error) {
     // 错误消息已由 request 拦截器处理，这里只需刷新商品信息
     await fetchProductDetail()
@@ -203,6 +283,9 @@ const handleImageError = (e) => {
 
 onMounted(() => {
   fetchProductDetail()
+  if (userStore.isLoggedIn) {
+    fetchAddressList()
+  }
 })
 </script>
 
@@ -342,6 +425,50 @@ onMounted(() => {
 
 .time-section {
   margin-bottom: 32px;
+}
+
+.address-section {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #f5f7fa;
+  border-radius: 12px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.address-option {
+  padding: 4px 0;
+}
+
+.address-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.receiver {
+  font-weight: 500;
+  color: #303133;
+}
+
+.phone {
+  color: #606266;
+  font-size: 14px;
+}
+
+.address-detail {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
 }
 
 .action-section {

@@ -23,6 +23,10 @@
             <el-icon><Timer /></el-icon>
             <span>秒杀管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/orders">
+            <el-icon><ShoppingCart /></el-icon>
+            <span>订单管理</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
 
@@ -64,7 +68,8 @@ const pageTitle = computed(() => {
   const titles = {
     '/admin': '数据统计',
     '/admin/products': '商品管理',
-    '/admin/seckill': '秒杀管理'
+    '/admin/seckill': '秒杀管理',
+    '/admin/orders': '订单管理'
   }
   return titles[route.path] || '管理后台'
 })
