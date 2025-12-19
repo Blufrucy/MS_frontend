@@ -93,8 +93,8 @@
         </div>
 
         <div class="products-grid" v-loading="loading">
-          <div class="product-card" v-for="product in hotProducts" :key="product.id" @click="goToProducts">
-            <div class="product-image-wrapper">
+          <div class="product-card" v-for="product in hotProducts" :key="product.id">
+            <div class="product-image-wrapper" @click="viewProduct(product)">
               <img :src="product.imageUrl || getPlaceholder()" class="product-image" @error="handleImageError" />
               <div class="product-overlay">
                 <el-button type="primary" circle size="large">
@@ -113,7 +113,13 @@
                   <span class="price-symbol">¥</span>
                   <span class="price-value">{{ product.originalPrice || '0.00' }}</span>
                 </div>
-                <el-button type="danger" size="small" round :disabled="product.status !== 1">
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  round 
+                  :disabled="product.status !== 1"
+                  @click.stop="handleBuyClick(product)"
+                >
                   立即购买
                 </el-button>
               </div>
@@ -130,6 +136,94 @@
         <el-empty v-if="!loading && hotProducts.length === 0" description="暂无热卖商品" />
       </div>
     </div>
+
+    <!-- 购买对话框 -->
+    <el-dialog 
+      v-model="buyDialogVisible" 
+      title="购买商品" 
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="selectedProduct" class="buy-dialog-content">
+        <div class="product-summary">
+          <el-image 
+            :src="selectedProduct.imageUrl" 
+            class="summary-image"
+            fit="cover"
+          >
+            <template #error>
+              <div class="image-error">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </template>
+          </el-image>
+          <div class="summary-info">
+            <h3>{{ selectedProduct.name }}</h3>
+            <p class="summary-price">¥{{ selectedProduct.originalPrice }}</p>
+          </div>
+        </div>
+
+        <el-form :model="orderForm" label-width="100px">
+          <el-form-item label="购买数量">
+            <el-input-number 
+              v-model="orderForm.quantity" 
+              :min="1" 
+              :max="99"
+            />
+          </el-form-item>
+
+          <el-form-item label="收货地址">
+            <el-select
+              v-model="orderForm.addressId"
+              placeholder="请选择收货地址"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="addr in addressList"
+                :key="addr.id"
+                :label="`${addr.receiverName} ${addr.phone} ${addr.province}${addr.city}${addr.district}${addr.detailAddress}`"
+                :value="addr.id"
+              >
+                <div class="address-option">
+                  <div class="address-main">
+                    <span class="receiver">{{ addr.receiverName }}</span>
+                    <span class="phone">{{ addr.phone }}</span>
+                    <el-tag v-if="addr.isDefault" type="success" size="small">默认</el-tag>
+                  </div>
+                  <div class="address-detail">
+                    {{ addr.province }}{{ addr.city }}{{ addr.district }}{{ addr.detailAddress }}
+                  </div>
+                </div>
+              </el-option>
+            </el-select>
+            <el-button 
+              text 
+              type="primary" 
+              @click="goToAddressManage"
+              style="margin-top: 8px"
+            >
+              <el-icon><Plus /></el-icon>
+              管理收货地址
+            </el-button>
+          </el-form-item>
+
+          <el-form-item label="订单金额">
+            <span class="total-amount">¥{{ calculateTotal() }}</span>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <el-button @click="buyDialogVisible = false">取消</el-button>
+        <el-button 
+          type="primary" 
+          @click="handleConfirmBuy"
+          :loading="buying"
+        >
+          确认购买
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -138,12 +232,23 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { getProductList } from '@/api/product'
-import { ElMessage } from 'element-plus'
+import { getAddressList } from '@/api/address'
+import { createProductOrder } from '@/api/productOrder'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Picture, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const hotProducts = ref([])
+const buyDialogVisible = ref(false)
+const selectedProduct = ref(null)
+const buying = ref(false)
+const addressList = ref([])
+const orderForm = ref({
+  quantity: 1,
+  addressId: null
+})
 
 const categories = [
   { id: 1, name: '数码电器', icon: 'Monitor' },
@@ -196,8 +301,96 @@ const fetchHotProducts = async () => {
   }
 }
 
+// 获取收货地址列表
+const fetchAddressList = async () => {
+  try {
+    const res = await getAddressList()
+    if (res.code === 200 && res.data) {
+      addressList.value = Array.isArray(res.data) ? res.data : []
+      const defaultAddr = addressList.value.find(addr => addr.isDefault)
+      if (defaultAddr) {
+        orderForm.value.addressId = defaultAddr.id
+      } else if (addressList.value.length > 0) {
+        orderForm.value.addressId = addressList.value[0].id
+      }
+    }
+  } catch (error) {
+    console.error('获取地址列表失败:', error)
+  }
+}
+
+// 查看商品详情
+const viewProduct = (product) => {
+  router.push('/products')
+}
+
 const goToProducts = () => {
   router.push('/products')
+}
+
+// 点击购买按钮
+const handleBuyClick = (product) => {
+  if (!userStore.isLoggedIn) {
+    ElMessageBox.confirm('请先登录', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消'
+    }).then(() => {
+      router.push('/login')
+    }).catch(() => {})
+    return
+  }
+
+  selectedProduct.value = product
+  orderForm.value.quantity = 1
+  buyDialogVisible.value = true
+  
+  if (addressList.value.length === 0) {
+    fetchAddressList()
+  }
+}
+
+// 计算总金额
+const calculateTotal = () => {
+  if (!selectedProduct.value) return '0.00'
+  const total = selectedProduct.value.originalPrice * orderForm.value.quantity
+  return total.toFixed(2)
+}
+
+// 确认购买
+const handleConfirmBuy = async () => {
+  if (!orderForm.value.addressId) {
+    ElMessage.warning('请选择收货地址')
+    return
+  }
+
+  buying.value = true
+  try {
+    const res = await createProductOrder({
+      productId: selectedProduct.value.id,
+      quantity: orderForm.value.quantity,
+      addressId: orderForm.value.addressId
+    })
+
+    if (res.code === 200) {
+      ElMessage.success('订单创建成功！')
+      buyDialogVisible.value = false
+      setTimeout(() => {
+        router.push('/orders')
+      }, 1500)
+    } else {
+      ElMessage.error(res.message || '订单创建失败')
+    }
+  } catch (error) {
+    console.error('创建订单失败:', error)
+    ElMessage.error('订单创建失败')
+  } finally {
+    buying.value = false
+  }
+}
+
+// 跳转到地址管理
+const goToAddressManage = () => {
+  router.push('/address')
 }
 
 const getPlaceholder = () => {
@@ -210,6 +403,9 @@ const handleImageError = (e) => {
 
 onMounted(() => {
   fetchHotProducts()
+  if (userStore.isLoggedIn) {
+    fetchAddressList()
+  }
 })
 </script>
 
@@ -669,5 +865,91 @@ onMounted(() => {
 .load-more {
   text-align: center;
   padding: 20px 0;
+}
+
+.buy-dialog-content {
+  padding: 10px 0;
+}
+
+.product-summary {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.summary-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.image-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #f0f0f0;
+  color: #999;
+  font-size: 32px;
+}
+
+.summary-info {
+  flex: 1;
+}
+
+.summary-info h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #303133;
+}
+
+.summary-price {
+  font-size: 24px;
+  color: #ff4d4f;
+  font-weight: bold;
+  margin: 0;
+}
+
+.summary-price::before {
+  content: '¥';
+  font-size: 16px;
+}
+
+.total-amount {
+  font-size: 28px;
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+.address-option {
+  padding: 4px 0;
+}
+
+.address-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.receiver {
+  font-weight: 500;
+  color: #303133;
+}
+
+.phone {
+  color: #606266;
+  font-size: 14px;
+}
+
+.address-detail {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
 }
 </style>

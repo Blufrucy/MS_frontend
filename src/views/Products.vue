@@ -190,8 +190,8 @@ const fetchProducts = async () => {
   loading.value = true
   try {
     const res = await getProductList({
-      pageNum: page.value,
-      pageSize: size.value,
+      page: page.value,
+      size: size.value,
       productName: searchKeyword.value || undefined
     })
     
